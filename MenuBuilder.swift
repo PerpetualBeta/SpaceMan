@@ -20,6 +20,13 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         let fingerprint = WorkspaceFingerprint.current()
         let snapshots = fingerprint.map { SnapshotStore.shared.snapshots(matching: $0) } ?? []
 
+        // About — first item, per Jorvik menu pattern
+        let about = NSMenuItem(title: "About SpaceMan", action: #selector(AppDelegate.openAbout), keyEquivalent: "")
+        about.target = appDelegate
+        menu.addItem(about)
+
+        menu.addItem(.separator())
+
         // Capture action
         let capture = NSMenuItem(title: "Snapshot current workspace…", action: #selector(AppDelegate.captureSnapshot), keyEquivalent: "")
         capture.target = appDelegate
@@ -56,10 +63,6 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         manage.isEnabled = false
         manage.toolTip = "Coming in Phase 5"
         menu.addItem(manage)
-
-        let about = NSMenuItem(title: "About SpaceMan", action: #selector(AppDelegate.openAbout), keyEquivalent: "")
-        about.target = appDelegate
-        menu.addItem(about)
 
         menu.addItem(.separator())
 

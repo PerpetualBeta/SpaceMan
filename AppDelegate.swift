@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem!
@@ -27,7 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func captureSnapshot() {
         guard let fingerprint = WorkspaceFingerprint.current() else {
-            showAlert(title: "Can't snapshot", message: "Couldn't identify the current workspace. Is macOS set up normally?", style: .warning)
+            SpaceManDialog.showMessage(
+                title: "Can't snapshot",
+                body: "Couldn't identify the current workspace. Is macOS set up normally?"
+            )
             return
         }
 
@@ -37,10 +41,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let snapshot = Snapshot(name: name, fingerprint: fingerprint, windows: windows)
         SnapshotStore.shared.add(snapshot)
 
-        showAlert(
+        SpaceManDialog.showMessage(
             title: "Snapshot saved",
-            message: "Captured \(windows.count) window\(windows.count == 1 ? "" : "s") as '\(name)'.",
-            style: .informational
+            body: "Captured \(windows.count) window\(windows.count == 1 ? "" : "s") as '\(name)'."
         )
     }
 
@@ -65,29 +68,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Helpers
 
     private func promptForName() -> String? {
-        let alert = NSAlert()
-        alert.messageText = "Name this snapshot"
-        alert.informativeText = "A short label shown in the menu. Up to 5 snapshots can be kept per workspace — the oldest is evicted when you exceed that."
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Cancel")
-
-        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 22))
-        input.placeholderString = "e.g. Coding, Focus, Comms"
-        alert.accessoryView = input
-        alert.window.initialFirstResponder = input
-
-        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
-        let name = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        return name.isEmpty ? nil : name
-    }
-
-    private func showAlert(title: String, message: String, style: NSAlert.Style) {
-        let alert = NSAlert()
-        alert.messageText = title
-        alert.informativeText = message
-        alert.alertStyle = style
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
+        SpaceManDialog.promptText(
+            title: "Name this snapshot",
+            body: "A short label shown in the menu. Up to 5 snapshots can be kept per workspace — the oldest is evicted when you exceed that.",
+            placeholder: "e.g. Coding, Focus, Comms",
+            confirmTitle: "Save"
+        )
     }
 }

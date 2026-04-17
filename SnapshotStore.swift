@@ -70,7 +70,9 @@ final class SnapshotStore {
         }
         do {
             let data = try Data(contentsOf: configURL)
-            snapshots = try JSONDecoder().decode([Snapshot].self, from: data)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            snapshots = try decoder.decode([Snapshot].self, from: data)
         } catch {
             NSLog("SpaceMan: failed to load snapshots — \(error)")
             // Preserve the corrupt file so nothing is lost silently.
