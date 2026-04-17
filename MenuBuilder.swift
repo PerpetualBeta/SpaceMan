@@ -58,8 +58,6 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
 
         let manage = NSMenuItem(title: "Manage snapshots…", action: #selector(AppDelegate.openManagement), keyEquivalent: "")
         manage.target = appDelegate
-        manage.isEnabled = false
-        manage.toolTip = "Coming in Phase 5"
         menu.addItem(manage)
 
         menu.addItem(.separator())

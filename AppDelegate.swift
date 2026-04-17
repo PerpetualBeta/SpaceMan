@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem!
     private let menuBuilder = MenuBuilder()
+    private var isRestoring = false
     let updateChecker = JorvikUpdateChecker(repoName: "SpaceMan")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -48,40 +49,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func restoreSnapshot(_ sender: NSMenuItem) {
+        guard !isRestoring else { return }
         guard let id = sender.representedObject as? UUID,
               let snapshot = SnapshotStore.shared.snapshots.first(where: { $0.id == id }) else {
             return
         }
 
-        let result = SnapshotRestore.restore(snapshot)
+        isRestoring = true
+        Task { @MainActor in
+            defer { isRestoring = false }
+            let result = await SnapshotRestore.restore(snapshot)
 
-        if result.skippedAccessibility {
-            SpaceManDialog.showMessage(
-                title: "Accessibility required",
-                body: "Grant SpaceMan Accessibility permission in System Settings → Privacy & Security → Accessibility, then try again."
-            )
-            return
+            if result.skippedAccessibility {
+                SpaceManDialog.showMessage(
+                    title: "Accessibility required",
+                    body: "Grant SpaceMan Accessibility permission in System Settings → Privacy & Security → Accessibility, then try again."
+                )
+                return
+            }
+
+            let body = restoreSummary(for: result, snapshot: snapshot)
+            SpaceManDialog.showMessage(title: "Restored '\(snapshot.name)'", body: body)
         }
-
-        let body = restoreSummary(for: result, snapshot: snapshot)
-        SpaceManDialog.showMessage(title: "Restored '\(snapshot.name)'", body: body)
     }
 
     private func restoreSummary(for result: SnapshotRestore.Result, snapshot: Snapshot) -> String {
         var parts: [String] = []
         parts.append("Positioned \(result.matched) of \(snapshot.windows.count) window\(snapshot.windows.count == 1 ? "" : "s").")
-        if result.skippedAppMissing > 0 {
-            parts.append("\(result.skippedAppMissing) skipped — app not running (Phase 3).")
+        if result.launched > 0 {
+            parts.append("Launched \(result.launched) app\(result.launched == 1 ? "" : "s") that weren't running.")
         }
-        if result.skippedWindowMissing > 0 {
-            parts.append("\(result.skippedWindowMissing) skipped — app has fewer windows than snapshot (Phase 4).")
+        if result.spawned > 0 {
+            parts.append("Spawned \(result.spawned) extra window\(result.spawned == 1 ? "" : "s").")
+        }
+        if result.skippedAppUninstalled > 0 {
+            parts.append("\(result.skippedAppUninstalled) skipped — app not installed.")
+        }
+        if result.skippedLaunchTimeout > 0 {
+            parts.append("\(result.skippedLaunchTimeout) skipped — app didn't surface a window in time.")
+        }
+        if result.skippedSpawnFailed > 0 {
+            parts.append("\(result.skippedSpawnFailed) skipped — couldn't spawn more windows (app may not support it).")
         }
         return parts.joined(separator: "\n")
     }
 
     @objc func openManagement() {
-        // Phase 5 target.
-        NSSound.beep()
+        SnapshotManagementWindowHost.show()
     }
 
     @objc func openAbout() {
