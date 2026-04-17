@@ -135,7 +135,20 @@ enum SpaceManDialog {
         window.center()
         if let initialFirstResponder {
             window.initialFirstResponder = initialFirstResponder
+            // initialFirstResponder only primes first-responder status on
+            // show — for modal windows we also need to make it current
+            // immediately after the window becomes key, or the field
+            // has a focus ring but no insertion point / keyboard focus.
+            DispatchQueue.main.async {
+                window.makeFirstResponder(initialFirstResponder)
+            }
         }
+
+        // SpaceMan is an accessory app (LSUIElement), so without an
+        // explicit activate the modal window appears but isn't front /
+        // key — the user has to click it once before typing works.
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
 
         ModalResponder.shared.reset()
         let response = NSApp.runModal(for: window)

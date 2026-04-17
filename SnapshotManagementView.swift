@@ -151,7 +151,6 @@ struct SnapshotManagementView: View {
 
 enum SnapshotManagementWindowHost {
     static var existingWindow: NSWindow?
-    static let delegate = AutoCloseWindowDelegate()
 
     @MainActor
     static func show() {
@@ -172,20 +171,10 @@ enum SnapshotManagementWindowHost {
         window.styleMask = [.titled, .closable, .resizable]
         window.isReleasedWhenClosed = false
         window.setContentSize(NSSize(width: 560, height: 420))
-        window.delegate = delegate
         JorvikWindowHelper.centreOnActiveDisplay(window)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         existingWindow = window
-    }
-}
-
-/// Closes the window as soon as it loses key status. Used to give the
-/// Manage Snapshots window popover-like behaviour — click outside and it
-/// disappears.
-final class AutoCloseWindowDelegate: NSObject, NSWindowDelegate {
-    func windowDidResignKey(_ notification: Notification) {
-        (notification.object as? NSWindow)?.close()
     }
 }
 
