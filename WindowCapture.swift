@@ -14,51 +14,61 @@ enum WindowCapture {
 
     /// Capture all windows currently on the active space, for every regular
     /// (user-facing) app. Windows are grouped per-app so `orderInApp` can be
-    /// assigned by window-number ascending.
+    /// assigned in stable order.
+    ///
+    /// AX enumeration returns windows across all spaces, so the CG
+    /// on-screen window-ID set is used as a filter — that list is
+    /// scoped to the current Mission Control space.
     static func captureCurrentSpace() -> [WindowRecord] {
         let axTrusted = AXIsProcessTrusted()
 
-        // CG window list scoped to current-space + on-screen. This returns
-        // visible, regular-layer windows. Minimised windows typically drop
-        // from this list, so they're picked up via the per-app AX pass.
+        // CG on-screen window list (current space only, regular layer).
         let listOpts: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
         let cgList = (CGWindowListCopyWindowInfo(listOpts, kCGNullWindowID) as? [[String: Any]]) ?? []
 
-        // Group CG entries by pid
-        var byPID: [pid_t: [[String: Any]]] = [:]
+        var onScreenIDs = Set<CGWindowID>()
+        var cgByPID: [pid_t: [[String: Any]]] = [:]
         for entry in cgList {
             guard let layer = entry[kCGWindowLayer as String] as? Int, layer == 0 else { continue }
             guard let pid = entry[kCGWindowOwnerPID as String] as? pid_t else { continue }
-            byPID[pid, default: []].append(entry)
+            if let id = entry[kCGWindowNumber as String] as? CGWindowID {
+                onScreenIDs.insert(id)
+            }
+            cgByPID[pid, default: []].append(entry)
         }
 
         var records: [WindowRecord] = []
 
         for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
             let pid = app.processIdentifier
-            let cgWindows = byPID[pid] ?? []
-
-            // Sort CG windows by window number ascending (roughly creation order)
+            let cgWindows = cgByPID[pid] ?? []
             let sortedCG = cgWindows.sorted {
                 let a = ($0[kCGWindowNumber as String] as? Int) ?? 0
                 let b = ($1[kCGWindowNumber as String] as? Int) ?? 0
                 return a < b
             }
 
-            // AX enumeration for minimised/hidden windows the CG list may miss
-            let axWindows: [AXUIElement] = axTrusted ? axWindowList(for: pid) : []
+            // AX walk, filtered to windows that appear on the current
+            // space (i.e. their CG window ID is in the on-screen set).
+            let axWindows: [AXUIElement] = axTrusted
+                ? axWindowList(for: pid).filter { isOnCurrentSpace($0, onScreenIDs: onScreenIDs) }
+                : []
 
-            // Build records from AX windows if we can — richer data. Fall
-            // back to CG-only records for anything AX doesn't expose.
-            let appRecords = buildRecords(
-                app: app,
-                axWindows: axWindows,
-                cgWindows: sortedCG
-            )
+            let appRecords = buildRecords(app: app, axWindows: axWindows, cgWindows: sortedCG)
             records.append(contentsOf: appRecords)
         }
 
         return records
+    }
+
+    /// Cross-reference an AX window with the current-space on-screen ID
+    /// set. Returns true if the AX element corresponds to a window on
+    /// the current space.
+    private static func isOnCurrentSpace(_ element: AXUIElement, onScreenIDs: Set<CGWindowID>) -> Bool {
+        var windowID: CGWindowID = 0
+        let rc = _AXUIElementGetWindow(element, &windowID)
+        guard rc == .success else { return false }
+        return onScreenIDs.contains(windowID)
     }
 
     // MARK: - AX helpers

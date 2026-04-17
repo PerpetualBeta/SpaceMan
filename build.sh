@@ -17,8 +17,10 @@ swiftc -O -o "$APP_BUNDLE/Contents/MacOS/$APP_NAME" \
     "$SCRIPT_DIR/SnapshotModel.swift" \
     "$SCRIPT_DIR/WindowCapture.swift" \
     "$SCRIPT_DIR/SnapshotStore.swift" \
+    "$SCRIPT_DIR/SnapshotRestore.swift" \
     "$SCRIPT_DIR/MenuBuilder.swift" \
     "$SCRIPT_DIR/DialogWindow.swift" \
+    "$SCRIPT_DIR/SpaceManSettingsContent.swift" \
     "$SCRIPT_DIR"/JorvikKit/*.swift \
     -framework Cocoa \
     -framework SwiftUI \
