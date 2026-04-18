@@ -9,9 +9,15 @@ A macOS utility for user-driven workspace snapshots. Capture a named layout of t
 
 ## Installation
 
-1. Download the latest release from [GitHub Releases](https://github.com/PerpetualBeta/SpaceMan/releases), unzip, and drag `SpaceMan.app` to your Applications folder
-2. Double-click to launch — a rocket icon appears in your menu bar
-3. Grant Accessibility permission when prompted (see [Permissions](#permissions) below)
+Two formats on every release — both signed and notarised, pick whichever suits:
+
+- **[Installer (`.pkg`)](https://github.com/PerpetualBeta/SpaceMan/releases/latest/download/SpaceMan.pkg)** — recommended for first-time installs. Double-click to run; macOS Installer places the app in `/Applications` without quarantine or App Translocation.
+- **[Download (`.zip`)](https://github.com/PerpetualBeta/SpaceMan/releases/latest)** — unzip and drag `SpaceMan.app` to your Applications folder.
+
+After installation:
+
+1. Launch SpaceMan — a rocket icon appears in your menu bar
+2. Grant Accessibility permission when prompted (see [Permissions](#permissions) below)
 
 ## Why
 
