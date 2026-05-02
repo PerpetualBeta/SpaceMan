@@ -9,20 +9,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let updateChecker = JorvikUpdateChecker(repoName: "SpaceMan")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        migrateLegacyPillColorKey()
+
         NSApp.setActivationPolicy(.accessory)
 
         _ = WindowCapture.ensureAccessibility()
 
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.image = Self.menuBarRocketImage()
-            JorvikMenuBarPill.apply(to: button)
         }
 
         menuBuilder.appDelegate = self
         statusItem.menu = menuBuilder.makeMenu()
 
         updateChecker.checkOnSchedule()
+    }
+
+    // One-shot removal of the user-chosen pill colour key from the old design.
+    // The new pill uses fixed grey/light colours; the key is dead weight.
+    private func migrateLegacyPillColorKey() {
+        let migrated = "didMigratePillColorV2"
+        if UserDefaults.standard.bool(forKey: migrated) { return }
+        UserDefaults.standard.removeObject(forKey: "menuBarPillColor")
+        UserDefaults.standard.set(true, forKey: migrated)
     }
 
     // MARK: - Menu actions
@@ -118,8 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func refreshPill() {
-        guard let button = statusItem?.button else { return }
-        JorvikMenuBarPill.apply(to: button)
+        statusItem?.button?.image = Self.menuBarRocketImage()
     }
 
     // MARK: - Helpers
@@ -140,18 +149,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// porthole, two swept-back fins. A slight scale-down keeps the
     /// rotated shape within the canvas bounds.
     private static func menuBarRocketImage() -> NSImage {
-        let size = NSSize(width: 22, height: 22)
-        let image = NSImage(size: size, flipped: false) { _ in
+        // When the pill is enabled, give the rocket a wider canvas so the
+        // pill wraps it with horizontal padding (canonical pattern).
+        // When disabled, the rocket renders square as a template image.
+        let pillEnabled = JorvikMenuBarPill.isEnabled
+        let size: NSSize = pillEnabled
+            ? NSSize(width: 30, height: 22)
+            : NSSize(width: 22, height: 22)
+
+        let image = NSImage(size: size, flipped: false) { rect in
             guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
+
+            // Pill background (read appearance per-paint so light/dark
+            // and wallpaper-tint changes track without an observer).
+            let rocketColor: NSColor
+            if pillEnabled {
+                let isDark = NSAppearance.currentDrawing().bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                let pillColor: NSColor = isDark
+                    ? NSColor(white: 0.85, alpha: 1.0)
+                    : NSColor(white: 0.20, alpha: 0.85)
+                let path = NSBezierPath(
+                    roundedRect: rect,
+                    xRadius: rect.height / 2,
+                    yRadius: rect.height / 2
+                )
+                pillColor.setFill()
+                path.fill()
+                rocketColor = isDark
+                    ? NSColor(white: 0.10, alpha: 1.0)
+                    : .white
+            } else {
+                rocketColor = .black  // template handling tints in/out of dark mode
+            }
+
             ctx.saveGState()
-            // Rotate 45° clockwise (negative angle in Y-up coords) about
-            // the centre, then scale in slightly so fin tips don't clip.
-            ctx.translateBy(x: 11, y: 11)
+            // Centre the 22×22 rocket coordinate system within the (possibly
+            // wider) image rect, then rotate/scale about that centre. The
+            // rocket's bezier paths below are still authored in their
+            // original 0–22 coordinates.
+            let cx = rect.width / 2
+            let cy = rect.height / 2
+            ctx.translateBy(x: cx, y: cy)
             ctx.rotate(by: -.pi / 4)
             ctx.scaleBy(x: 0.85, y: 0.85)
             ctx.translateBy(x: -11, y: -11)
 
-            NSColor.black.setFill()
+            rocketColor.setFill()
 
             // Body — vertical capsule (rounded-rect)
             let body = NSBezierPath(
@@ -202,7 +245,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ctx.restoreGState()
             return true
         }
-        image.isTemplate = true
+        // Pill mode owns its colours end-to-end (no template tinting);
+        // bare-glyph mode uses template behaviour for light/dark adaptation.
+        image.isTemplate = !pillEnabled
         return image
     }
 }
