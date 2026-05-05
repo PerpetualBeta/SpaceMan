@@ -66,6 +66,10 @@ final class MenuBuilder: NSObject, NSMenuDelegate {
         settings.target = appDelegate
         menu.addItem(settings)
 
+        let updates = NSMenuItem(title: "Check for Updates…", action: #selector(AppDelegate.checkForUpdates(_:)), keyEquivalent: "")
+        updates.target = appDelegate
+        menu.addItem(updates)
+
         menu.addItem(.separator())
 
         let quit = NSMenuItem(title: "Quit SpaceMan", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")

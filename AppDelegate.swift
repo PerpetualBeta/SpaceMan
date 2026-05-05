@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -7,6 +8,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let menuBuilder = MenuBuilder()
     private var isRestoring = false
     let updateChecker = JorvikUpdateChecker(repoName: "SpaceMan")
+
+    // Sparkle handles the actual update checking and installation. The
+    // legacy JorvikUpdateChecker is kept for the Settings UI continuity but
+    // its scheduled check is suppressed below.
+    let userDriverDelegate = SpaceManUserDriverDelegate()
+    lazy var sparkleUpdater = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: userDriverDelegate
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         migrateLegacyPillColorKey()
@@ -23,7 +34,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBuilder.appDelegate = self
         statusItem.menu = menuBuilder.makeMenu()
 
-        updateChecker.checkOnSchedule()
+        _ = sparkleUpdater  // touch lazy to start the updater
+        // updateChecker.checkOnSchedule()  // disabled; Sparkle handles it now
+    }
+
+    @objc func checkForUpdates(_ sender: Any?) {
+        sparkleUpdater.checkForUpdates(sender)
     }
 
     // One-shot removal of the user-chosen pill colour key from the old design.
@@ -249,5 +265,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // bare-glyph mode uses template behaviour for light/dark adaptation.
         image.isTemplate = !pillEnabled
         return image
+    }
+}
+
+// MARK: - Sparkle User Driver Delegate
+
+/// Brings SpaceMan to the front before Sparkle shows any modal dialog.
+/// Without this, Sparkle's NSAlert appears but stays behind whatever app
+/// is currently key, because LSUIElement apps don't auto-activate when
+/// they present windows.
+final class SpaceManUserDriverDelegate: NSObject, SPUStandardUserDriverDelegate {
+    func standardUserDriverWillShowModalAlert() {
+        NSApp.activate(ignoringOtherApps: true)
     }
 }

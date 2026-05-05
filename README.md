@@ -41,7 +41,8 @@ Click the rocket icon in the menu bar:
 | **Snapshot current workspace…** | Prompts for a name, saves a snapshot |
 | *(named snapshots)* | Click to restore; newest first; timestamp inline |
 | **Manage snapshots…** | Opens the management window |
-| **Settings… (⌘,)** | Permissions, menu bar pill, launch at login, updates |
+| **Settings… (⌘,)** | Permissions, menu bar pill, launch at login |
+| **Check for Updates…** | Manual Sparkle update check |
 | **Quit SpaceMan (⌘Q)** | — |
 
 ### Taking a snapshot
@@ -119,7 +120,8 @@ Right-click the rocket icon and choose **Settings…** to configure:
 - **Permissions** — Accessibility status with grant button
 - **Menu bar icon pill** — optional grey background for stronger contrast on busy or wallpaper-tinted menu bars (off by default)
 - **Launch at Login** — start automatically when you log in
-- **Auto-update** — check for new versions on a configurable schedule with optional automatic installation
+
+Updates are handled by [Sparkle](https://sparkle-project.org). SpaceMan checks for new versions automatically once a day in the background; use **Check for Updates…** in the menu for an on-demand check.
 
 ## Building from Source
 
