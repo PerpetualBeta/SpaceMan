@@ -7,11 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let menuBuilder = MenuBuilder()
     private var isRestoring = false
-    let updateChecker = JorvikUpdateChecker(repoName: "SpaceMan")
 
-    // Sparkle handles the actual update checking and installation. The
-    // legacy JorvikUpdateChecker is kept for the Settings UI continuity but
-    // its scheduled check is suppressed below.
     let userDriverDelegate = SpaceManUserDriverDelegate()
     lazy var sparkleUpdater = SPUStandardUpdaterController(
         startingUpdater: true,
@@ -35,7 +31,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menuBuilder.makeMenu()
 
         _ = sparkleUpdater  // touch lazy to start the updater
-        // updateChecker.checkOnSchedule()  // disabled; Sparkle handles it now
     }
 
     @objc func checkForUpdates(_ sender: Any?) {
@@ -134,10 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func openSettings() {
-        JorvikSettingsView.showWindow(
-            appName: "SpaceMan",
-            updateChecker: updateChecker
-        ) { [weak self] in
+        JorvikSettingsView.showWindow(appName: "SpaceMan") { [weak self] in
             SpaceManSettingsContent { [weak self] in
                 self?.refreshPill()
             }
