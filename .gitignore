@@ -1,3 +1,4 @@
 *.app
 *.zip
+.build/
 .DS_Store

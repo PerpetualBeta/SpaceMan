@@ -128,11 +128,11 @@ Updates are handled by [Sparkle](https://sparkle-project.org). SpaceMan checks f
 ```bash
 git clone https://github.com/PerpetualBeta/SpaceMan.git
 cd SpaceMan
-bash build.sh
-open SpaceMan.app
+gmake build
+open .build/SpaceMan.app
 ```
 
-`build.sh` compiles with `swiftc -O` and produces a Developer ID–signed `.app` bundle. JorvikKit files are compiled in from `JorvikKit/`.
+Requires GNU Make 4.x — `brew install make` installs it as `gmake`. `gmake build` compiles with `swiftc -O` and produces a Developer ID–signed `.app` bundle. JorvikKit files are compiled in from `JorvikKit/`.
 
 To regenerate the app icon (astronaut helmet on the standard Jorvik-blue gradient tile):
 
