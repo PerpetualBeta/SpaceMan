@@ -37,7 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil, queue: .main
         ) { [weak self] _ in
-            self?.refreshPill()
+            Task { @MainActor in self?.refreshPill() }
         }
 
         _ = sparkleUpdater  // touch lazy to start the updater
