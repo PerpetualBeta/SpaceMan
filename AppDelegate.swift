@@ -23,6 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = WindowCapture.ensureAccessibility()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // Persist the item's menu-bar slot across launches (and let a user ⌘-drag stick).
+        statusItem.autosaveName = "SpaceManStatusItem"
         if let button = statusItem.button {
             button.image = Self.menuBarRocketImage()
         }
